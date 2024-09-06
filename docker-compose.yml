@@ -1,0 +1,129 @@
+# version: "3.7"
+# services:
+#   app:
+#     build: .
+#     container_name: up_ispit
+#     ports:
+#       - "8000:8000"
+#     depends_on:
+#       - mysql
+#       - redis
+#       - kafka
+#     networks:
+#       - bpnet
+#     restart: always
+#   redis:
+#     image: redis
+#     container_name: redis
+#     environment:
+#       - ALLOW_EMPTY_PASSWORD=yes
+#     networks:
+#       - bpnet
+#   mysql:
+#     image: mysql
+#     container_name: mysql
+#     environment:
+#       - MYSQL_DATABASE=up_ispit
+#       - MYSQL_USER=up_ispit
+#       - MYSQL_PASSWORD=Asdf123
+#       - MYSQL_ROOT_PASSWORD=Asdf123
+#     volumes:
+#       - mysql:/var/lib/mysql
+#     networks:
+#       - bpnet
+#   zookeeper:
+#     image: wurstmeister/zookeeper
+#     container_name: zookeeper
+#     networks:
+#       - bpnet
+#   kafka:
+#     image: wurstmeister/kafka
+#     container_name: kafka
+#     environment:
+#       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+#       - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+#       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+#     networks:
+#       - bpnet
+# volumes:
+#   mysql:
+# networks:
+#   bpnet:
+#     driver: bridge
+
+version: '3.8'
+
+services:
+  # FastAPI application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - redis
+      - kafka
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:Asdf123@localhost:3308/up_ispit
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_URL=kafka:9092
+    networks:
+      - mynetwork
+
+  # MySQL database
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: Asdf123
+      MYSQL_DATABASE: up_ispit
+      MYSQL_USER: up_ispit
+      MYSQL_PASSWORD: Asdf123
+    ports:
+      - "3308:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - mynetwork
+
+  # Redis service
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+
+  # Kafka service
+  kafka:
+    image: wurstmeister/kafka:latest
+    environment:
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    ports:
+      - "9093:9093"
+    depends_on:
+      - zookeeper
+    networks:
+      - mynetwork
+
+  # Zookeeper service (required for Kafka)
+  zookeeper:
+    image: bitnami/zookeeper:3.8.1
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    networks:
+      - mynetwork
+
+# Define named volumes for data persistence
+volumes:
+  db_data:
+
+# Define networks for communication between services
+networks:
+  mynetwork:
+    driver: bridge
