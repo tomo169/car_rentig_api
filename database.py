@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 db_user = 'root'  
 db_password = 'Asdf123' 
-db_host = 'localhost'  
+db_host = '127.0.0.1'  
 db_port = '3308'  
 db_name = 'up_ispit'  
 
